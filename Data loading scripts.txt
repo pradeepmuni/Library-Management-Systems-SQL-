@@ -1,0 +1,163 @@
+Data laoding scripts:
+
+----------------------Fine table loading script:
+
+select loan_id from book_loans where DATE_IN>due_date
+
+
+create sequence fineseq
+start with 1
+increment by 1
+DROP SEQUENCE fineseq
+
+insert into fines (loan_id,fine_amt,paid) 
+select c.loan,c.fine_amt,fineseq.nextval from 
+(select b.loan_id as loan,(b.date_in-b.due_date)*0.25 as fine_amt from book_loans b where b.DATE_IN>b.due_date )
+c
+
+update fines
+set paid = 'N' WHERE PAID >75
+
+update fines
+SET PAID = 'Y' where rownum <76
+
+---------------author table data loading:
+insert into author_load (
+
+select part_1  from (
+SELECT b.*,
+REGEXP_SUBSTR (authro, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 5) AS part_5
+FROM books_load b)
+union
+select part_2 from (
+SELECT b.*,
+REGEXP_SUBSTR (authro, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 5) AS part_5
+FROM books_load b) where part_2 is not NULL
+union
+select part_3 from (
+SELECT b.*,
+REGEXP_SUBSTR (authro, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 5) AS part_5
+FROM books_load b) where part_3 is not NULL
+union
+select part_4 from (
+SELECT b.*,
+REGEXP_SUBSTR (authro, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 5) AS part_5
+FROM books_load b) where part_4 is not NULL
+union
+select part_5 from (
+SELECT b.*,
+REGEXP_SUBSTR (authro, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (authro, '[^,]+', 1, 5) AS part_5
+FROM books_load b) where part_5 is not NULL
+);
+select count(*) from author_load
+delete from author_load
+
+delete from author_load where length(author)<3 and  length(author) is null;
+
+create sequence author_id_seq 
+START with 1
+INCREMENT BY 1;
+
+
+insert into authors (author_id,author_name)  
+select author_id_seq.nextval,author from (select distinct trim(author) as author from author_load)
+
+select count(*) from authors
+
+---------------------loading book_loans table
+create SEQUENCE bookcardseq
+start with 1
+increment by 1;
+
+
+
+create table tempbookno
+(tempbook char(10))
+
+DROP TABLE tempbookno
+
+insert into tempbookno (tempbook)
+select * from (select book_id from bookcopies order by dbms_random.value)tb1 where rownum<=600;
+
+select * from tempbookno
+
+create table tempbookno1
+(nom number,
+tempbook1 char(10))
+
+DROP TABLE tempbookno
+
+insert into tempbookno1 (nom,tempbook1)
+select seq1.nextval,tempbook from tempbookno;
+select * from tempbookno1
+
+select * from tempbookno
+
+create table tempcardno
+(tempcard char(8))
+
+DROP TABLE tempcardno
+insert into tempcardno (tempcard)
+select * from (select card_no from borrower 
+order by dbms_random.value ) tb2 where rownum<=600;
+
+select * from tempcardno
+
+create table tempcardno1
+(nom number,
+tempcard1 char(8))
+drop table tempcardno1
+
+insert into tempcardno1 (nom,tempcard1)
+select seq2.nextval,tempcard from tempcardno;
+select * from tempcardno1
+
+select * from bookcardrand
+insert into bookcardrand
+(loanid,CARDNO,BOOKNO)
+select bookcardseq.nextval,c.tempcard1,b.tempbook1 from tempcardno1 c,tempbookno1 b where c.nom=b.nom;
+
+select * from bookcardrand
+ *****************random date generation script
+ create SEQUENCE date_seq
+start with 1
+increment by 1;
+
+create table randomdategen
+(dateout date,
+duedate date,
+datein date,
+nuseq number)
+
+begin
+  for l in 1..600 loop
+    insert into randomdategen (dateout,duedate,datein,nuseq)  
+    (
+    select d,d+14,TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(d,'J'),TO_CHAR(d+20,'J'))),'J') as date_in,date_seq.nextval
+    from (SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2018-01-01','J'),TO_CHAR(DATE '2018-11-30','J'))),'J') 
+    as d FROM DUAL)
+    );
+  end loop;
+end;
+
+-------------------------------------------------------------------

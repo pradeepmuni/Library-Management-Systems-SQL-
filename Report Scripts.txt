@@ -1,0 +1,35 @@
+-----Top 10 borrowers
+select d.card_no,e.first_name,e.last_name,d.count_of_books from (
+select b.card_no, count(*) as count_of_books from book_loans b
+group by b.card_no)d,borrower e where d.card_no=e.card_no and rownum<= 10
+order by d.count_of_books desc ;
+
+
+-----------Top 10 popular books
+select * from(
+select a.isbn10,b.title,c.authors,a.No_of_checkouts from
+(select isbn10,count(*)as No_of_checkouts from book_loans group by isbn10)a,books b,fullauthorname c
+where
+a.isbn10=b.isbn10 and
+b.isbn13=c.isbn13
+order by a.No_of_checkouts desc) g where rownum<=10;
+
+
+-----top 10 popular books of last month
+
+select* from(
+select * from(
+select g.isbn10,g.title,g.date_out,count(*)as No_Of_Checkouts from(
+select a.isbn10,b.title,a.date_out from book_loans a,books b where 
+a.isbn10=b.isbn10 and
+to_char(a.date_out,'mm')= to_char(sysdate,'mm')-1)g group by g.isbn10,g.title,g.date_out)j order by j.No_Of_Checkouts desc)m where rownum<=10
+
+--top 10 late dues
+select * from(
+select a.isbn10,b.title,c.authors,a.Late_dues_count from
+(select isbn10,count(*)as Late_dues_count from book_loans where date_in>due_date group by isbn10)a,
+books b,fullauthorname c
+where
+a.isbn10=b.isbn10 and
+b.isbn13=c.isbn13
+order by a.Late_dues_count desc) g where rownum<=10;

@@ -1,0 +1,11 @@
+
+
+----------Fine report for a specified borrower absed on paid or unpaid status
+
+SELECT f.loan_id,c.title as Books_checked_out,date_out as checkout_date,fine_amt,paid 
+from fines f,book_loans b,books c where f.loan_id=b.loan_id and b.isbn10=c.isbn10 and paid LIKE '%' ||:PAID1||'%' AND card_no like '%' || :BORROWERID1 || '%'
+
+
+------------Over due report for a specified borrower (if any)
+
+select l.loan_id,b.title as Books_Borrowed,l.due_date,card_no from book_loans l,books b where l.isbn10=b.isbn10 and date_in IS null and to_char(due_date,'dd-mm-yy')<to_char(sysdate,'dd-mm-yy') and card_no is not null

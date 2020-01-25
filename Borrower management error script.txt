@@ -1,0 +1,12 @@
+---------------Borrower management error script
+
+declare
+ssn_validate number;
+begin
+    if :APEX$ROW_STATUS = 'C' then
+        select count(*) into ssn_validate from borrower where ssn=:SSN;
+    end if;
+    if ssn_validate>0 then
+        return 'SSN already exists. Please enter another SSN';
+    end if;
+end;

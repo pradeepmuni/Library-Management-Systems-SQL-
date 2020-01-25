@@ -1,0 +1,25 @@
+declare
+nloan number;
+loanidtemp number;
+fineamt number(10,2);
+datecheck number(10);
+
+begin
+  select count(*) into nloan from book_loans where isbn10 like '%'||:BOOKIDD||'%' AND card_no like '%' || :CARID11 || '%' AND date_in is NULL;
+  if nloan>0 then
+     update book_loans set date_in=sysdate where isbn10 like '%'||:BOOKIDD||'%' AND card_no like '%' || :CARID11 || '%';
+     update bookcopies set num_copy=num_copy+1 where isbn10 like '%'||:BOOKIDD||'%';
+     select loan_id into loanidtemp from book_loans where isbn10 like '%'||:BOOKIDD||'%' AND card_no like '%' || :CARID11 || '%';
+     
+     select count(*) into datecheck from book_loans where loan_id=loanidtemp and date_in>due_date;
+          if datecheck=1 then
+              select (date_in-due_date)*0.25 into fineamt from book_loans where loan_id=loanidtemp;
+              insert into fines values (loanidtemp,fineamt,'N');
+               htp.p('Book has been checked in successfully and the fine amount is '||fineamt||'.' );
+          else 
+               htp.p('Book has been checked in successfully and no fines are assessed');
+          end if;
+  else
+  htp.p('This Borrower '||:CARID11||' does not have any books from Library to check in' );
+  end if;
+end;

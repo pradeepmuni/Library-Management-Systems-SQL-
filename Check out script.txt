@@ -1,0 +1,48 @@
+
+
+declare
+dateouttemp date;
+bookidtemp number(10);
+loantemp number;
+pastdue number;
+today date;
+checkpay char;
+existloan number;
+ncop number;
+loan number;
+bcopy number;
+isbntemp char;
+cardtemp char;
+
+begin
+select c.num_copy into bcopy from bookcopies c,branch b where c.branch_id=b.branch_id and isbn10=:ISBN2 and branch_name=:BRANCH2;
+IF bcopy>0 THEN
+    select count(*) into checkpay from book_loans a,fines b where a.loan_id=b.loan_id and paid='N' and card_no like '%' || :CARDNUMBER2 || '%';
+    if checkpay=0 then
+        select sysdate into today from dual;
+        select count(*) into pastdue from book_loans where today>due_date and card_no like '%' || :CARDNUMBER2 || '%' and date_in is NULL;
+        if pastdue>0 then
+             htp.p('This Card number has Past Due Books' ); 
+        else
+            select count(*) into existloan from book_loans where card_no like '%' || :CARDNUMBER2 || '%' and date_in is NULL and today<=due_date;
+            if existloan<3 then
+                select (max(loan_id) + 1) into loantemp from book_loans;
+                select sysdate into dateouttemp from dual;
+                select v.book_id into bookidtemp from bookcopies v,branch w where isbn10=:ISBN2 and branch_name=:BRANCH2 and v.branch_id=w.branch_id;
+				--select book_id into bookidtemp from bookcopies,branch where branch.branch_id=bookcopies.branch_id and isbn10=:ISBN2 and branch_name=:BRANCH2 and num_copy>0;
+                --select isbn10 into isbntemp from books where isbn10=:ISBN2;
+                --select card_no into cardtemp from borrower where card_no=:CARDNUMBER2;
+                insert into book_loans values (loantemp,:ISBN2,:CARDNUMBER2,dateouttemp,dateouttemp+14,NULL);
+                update bookcopies set num_copy=num_copy-1 where book_id=bookidtemp;
+				htp.p('Book Has been Checked Out Successfully');
+            else
+                htp.p('This Borrower '||:CARDNUMBER2||' has already reached the Limit of 3 Book Loans');
+            end if;
+        end if;
+    else
+        htp.p('This Card number has unpaid fine' );   
+    end if;
+ELSE
+htp.p(' Cannot Check Out the Book as the Book is not available' ); 
+END IF;	
+end;

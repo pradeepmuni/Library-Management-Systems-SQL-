@@ -1,0 +1,5 @@
+select b.title as Books, f.authors,b.isbn10,c.num_copy from bookcopies c,books b ,fullauthorname f,branch h where 
+f.isbn13=b.isbn13 and 
+b.isbn10=c.isbn10 and 
+c.branch_id=h.branch_id and
+h.branch_name=:BRANCHNAME
